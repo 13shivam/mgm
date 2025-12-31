@@ -1,11 +1,68 @@
-# macOS Gateway Monitor v0.0.1
+
+<h1 align="center">
+  <img src="assets/icon-512.png" alt="Icon" width="28" height="28" style="vertical-align: middle;">
+  macOS Gateway Monitor v0.0.1
+</h1>
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![macOS](https://img.shields.io/badge/macOS-10.15+-blue.svg)](https://www.apple.com/macos/)
 [![Node](https://img.shields.io/badge/node-16+-green.svg)](https://nodejs.org/)
 [![Electron](https://img.shields.io/badge/electron-38.2.1-blue.svg)](https://www.electronjs.org/)
 
-macOS security and network monitoring tool with real-time process analysis, network bandwidth tracking, and comprehensive security scanning. Built with modern modular architecture for scalability and maintainability.
+A developer-friendly macOS monitoring tool for deep system analysis and network visibility. Designed for developers, security professionals, and anyone interested in understanding egress/ingress traffic patterns, process-level network activity, and OS-layer diagnostics. Built with Electron for native performance and modern UI.
+
+**Key Capabilities:**
+- 🔍 **Process-Level Network Tracking**: See which applications are making network connections and consuming bandwidth
+- 🌐 **Egress/Ingress Analysis**: Monitor all TCP, UDP, and Unix socket connections with real-time state tracking
+- 🔒 **Security Deep Dive**: Inspect kernel extensions, firewall rules, Gatekeeper status, SIP configuration, and startup items
+- 📊 **OS-Layer Diagnostics**: Drill down into routing tables, ARP cache, DNS configuration, and network interfaces
+- 💻 **System Profiling**: Complete hardware/software inventory with development environment details
+- 🎯 **Admin Privilege Management**: Graceful handling of privileged operations with passwordless sudo support
+
+## Installation
+
+### Homebrew (Recommended)
+
+```bash
+# Add the tap
+brew tap 13shivam/mgm
+
+# Install the app
+brew install --cask mgm
+```
+
+### Manual Installation
+
+```bash
+# Clone the repository
+git clone https://github.com/13shivam/mgm.git
+cd mgm
+
+# Install dependencies
+npm install
+
+# Run the application
+npm start
+```
+
+### Download DMG
+
+Download pre-built installers from [Releases](https://github.com/13shivam/mgm/releases):
+- **Apple Silicon (M1/M2/M3)**: Download AppleSilicon.dmg
+- **Intel Macs**: Download Intel.dmg
+
+
+## Screenshots
+
+### App in Action
+![Demo](assets/demo.gif)
+
+
+### Main Dashboard
+![Main Dashboard](assets/screenshot-dashboard.png)
+
+### Network Monitoring
+![Network Monitoring](assets/screenshot-network.png)
 
 ## ✨ Latest Updates
 
@@ -82,30 +139,29 @@ macOS security and network monitoring tool with real-time process analysis, netw
 - **Detail Panels**: Click any item for in-depth explanations with Mac-specific context
 - **Professional Styling**: Clean, modern interface with gradient effects
 
+## Architecture
+
+For detailed architecture documentation, diagrams, and design principles, see the [Architecture Documentation](architecture/README.md).
+
+### System Architecture
+![System Architecture](architecture/system-architecture.png)
+
+### Process Monitoring Flow
+![Process Monitoring Sequence](architecture/process-monitoring-sequence.png)
+
+### Security Scanning Flow
+![Security Scanning Sequence](architecture/security-scan-sequence.png)
+
+### Data Flow
+![Data Flow](architecture/data-flow.png)
+
 ## Prerequisites
 
 - **macOS**: 10.15+ (Catalina or later)
 - **Node.js**: 16+ 
 - **Admin Privileges**: Recommended for full functionality (network monitoring, security scanning)
 
-## Installation
-
-### Homebrew (Recommended)
-
-```bash
-# Add the tap
-brew tap 13shivam/mgm
-
-# Install the app
-brew install --cask mgm
-```
-
-### Manual Installation
-
-```bash
-# Clone the repository
-git clone https://github.com/13shivam/mgm.git
-cd mgm
+## Admin Privilege Setup
 
 # Install dependencies
 npm install
@@ -121,12 +177,6 @@ Download pre-built installers from [Releases](https://github.com/13shivam/mgm/re
 - **Intel Macs**: Download Intel.dmg
 
 ## Admin Privilege Setup
-
-For optimal experience without repeated password prompts, choose one option:
-
-### Option 1: Automated Setup (Recommended)
-```bash
-# One-time setup script
 ./setup-admin.sh
 
 # Then run normally
@@ -367,12 +417,3 @@ For issues, feature requests, or questions:
 - **Educational Interface**: Mac-specific explanations and context throughout the application
 - **Admin Privilege Integration**: Enhanced functionality with proper fallbacks for limited access
 
-### Key Improvements Since Initial Release
-- ✅ **Search System**: Complete search functionality with mode management and clear options
-- ✅ **UI Enhancement**: Professional styling with modern design patterns and animations  
-- ✅ **Security Analysis**: Comprehensive scanning with detailed explanations and recommendations
-- ✅ **Network Monitoring**: Process attribution and enhanced connection analysis
-- ✅ **System Information**: Complete hardware/software details with export capabilities
-- ✅ **Error Handling**: Robust error management with user-friendly feedback
-- ✅ **Testing Coverage**: 50%+ test coverage with comprehensive validation
-- ✅ **Performance Optimization**: Intelligent refresh and resource management
