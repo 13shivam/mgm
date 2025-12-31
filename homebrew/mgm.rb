@@ -5,7 +5,7 @@ cask "mgm" do
     sha256 "INTEL_SHA256_PLACEHOLDER"
     url "https://github.com/13shivam/mgm/releases/download/v#{version}/macOS-Gateway-Monitor-#{version}-Intel.dmg"
   else
-    sha256 "ARM_SHA256_PLACEHOLDER"
+    sha256 "bb65484a058892e238f58e8ca6c858c6372712fd5c39cf70c04d0f325b03faa0"
     url "https://github.com/13shivam/mgm/releases/download/v#{version}/macOS-Gateway-Monitor-#{version}-AppleSilicon.dmg"
   end
   
