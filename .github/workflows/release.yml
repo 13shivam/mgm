@@ -35,8 +35,6 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -47,70 +45,97 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Build DMG
-        run: npm run build
+      - name: Build DMG (Universal - Both Architectures)
+        env:
+          CSC_IDENTITY_AUTO_DISCOVERY: false
+        run: |
+          npm run build
+          echo "✅ Build completed"
+          ls -lh dist/
 
       - name: Get version from tag
         id: version
         run: echo "VERSION=${GITHUB_REF#refs/tags/v}" >> $GITHUB_OUTPUT
 
-      - name: Rename DMG files
+      - name: List and Rename DMG files
+        id: rename
         run: |
           cd dist
+          echo "📦 Files in dist:"
+          ls -la
+          
+          # Rename ARM64 if exists
           if [ -f "macOS Gateway Monitor-${{ steps.version.outputs.VERSION }}-arm64.dmg" ]; then
             mv "macOS Gateway Monitor-${{ steps.version.outputs.VERSION }}-arm64.dmg" "macOS-Gateway-Monitor-${{ steps.version.outputs.VERSION }}-AppleSilicon.dmg"
+            echo "ARM_BUILT=true" >> $GITHUB_OUTPUT
+            echo "✅ Renamed ARM64 DMG"
+          else
+            echo "ARM_BUILT=false" >> $GITHUB_OUTPUT
+            echo "⚠️ ARM64 DMG not found"
           fi
+          
+          # Rename Intel if exists
           if [ -f "macOS Gateway Monitor-${{ steps.version.outputs.VERSION }}-x64.dmg" ]; then
             mv "macOS Gateway Monitor-${{ steps.version.outputs.VERSION }}-x64.dmg" "macOS-Gateway-Monitor-${{ steps.version.outputs.VERSION }}-Intel.dmg"
+            echo "INTEL_BUILT=true" >> $GITHUB_OUTPUT
+            echo "✅ Renamed Intel DMG"
+          else
+            echo "INTEL_BUILT=false" >> $GITHUB_OUTPUT
+            echo "⚠️ Intel DMG not found"
           fi
+          
+          echo "📦 Renamed files:"
           ls -la
 
       - name: Calculate SHA256 checksums
         id: checksums
         run: |
           cd dist
-          if [ -f "macOS-Gateway-Monitor-${{ steps.version.outputs.VERSION }}-Intel.dmg" ]; then
+          
+          # Intel checksum
+          if [ "${{ steps.rename.outputs.INTEL_BUILT }}" == "true" ]; then
             INTEL_SHA=$(shasum -a 256 "macOS-Gateway-Monitor-${{ steps.version.outputs.VERSION }}-Intel.dmg" | awk '{print $1}')
             echo "INTEL_SHA=$INTEL_SHA" >> $GITHUB_OUTPUT
-            echo "Intel SHA256: $INTEL_SHA"
+            echo "✅ Intel SHA256: $INTEL_SHA"
           else
             echo "INTEL_SHA=NOT_BUILT" >> $GITHUB_OUTPUT
+            echo "⚠️ Intel not built"
           fi
-          if [ -f "macOS-Gateway-Monitor-${{ steps.version.outputs.VERSION }}-AppleSilicon.dmg" ]; then
+          
+          # ARM checksum
+          if [ "${{ steps.rename.outputs.ARM_BUILT }}" == "true" ]; then
             ARM_SHA=$(shasum -a 256 "macOS-Gateway-Monitor-${{ steps.version.outputs.VERSION }}-AppleSilicon.dmg" | awk '{print $1}')
             echo "ARM_SHA=$ARM_SHA" >> $GITHUB_OUTPUT
-            echo "Apple Silicon SHA256: $ARM_SHA"
+            echo "✅ ARM SHA256: $ARM_SHA"
           else
             echo "ARM_SHA=NOT_BUILT" >> $GITHUB_OUTPUT
+            echo "⚠️ ARM not built"
           fi
 
       - name: Update Homebrew Formula
         id: update_formula
         run: |
-          # Clone the tap repository
           git clone https://github.com/13shivam/homebrew-mgm.git tap-repo
           cd tap-repo
-          
-          # Create Casks directory if it doesn't exist
           mkdir -p Casks
-          
-          # Copy and update the formula
           cp ../homebrew/mgm.rb Casks/mgm.rb
           
-          # Update version and checksums
+          # Update version
           sed -i '' "s/version \".*\"/version \"${{ steps.version.outputs.VERSION }}\"/" Casks/mgm.rb
           
-          # Update Intel SHA256 if built
+          # Update Intel SHA256
           if [ "${{ steps.checksums.outputs.INTEL_SHA }}" != "NOT_BUILT" ]; then
             sed -i '' "/Hardware::CPU.intel?/,/url.*Intel/ s/sha256 \"[^\"]*\"/sha256 \"${{ steps.checksums.outputs.INTEL_SHA }}\"/" Casks/mgm.rb
+            echo "✅ Updated Intel SHA256"
           fi
           
-          # Update ARM SHA256 if built
+          # Update ARM SHA256
           if [ "${{ steps.checksums.outputs.ARM_SHA }}" != "NOT_BUILT" ]; then
             sed -i '' "/else/,/url.*AppleSilicon/ s/sha256 \"[^\"]*\"/sha256 \"${{ steps.checksums.outputs.ARM_SHA }}\"/" Casks/mgm.rb
+            echo "✅ Updated ARM SHA256"
           fi
           
-          echo "Formula updated successfully"
+          echo "📄 Updated formula:"
           cat Casks/mgm.rb
 
       - name: Commit and Push to Tap Repo
@@ -123,14 +148,15 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add Casks/mgm.rb
+          
           if git diff --staged --quiet; then
-            echo "No changes to commit"
             echo "COMMITTED=false" >> $GITHUB_OUTPUT
+            echo "⚠️ No changes to commit"
           else
             git commit -m "chore: update mgm cask to v${{ steps.version.outputs.VERSION }}"
             git push https://${TAP_TOKEN}@github.com/13shivam/homebrew-mgm.git main
             echo "COMMITTED=true" >> $GITHUB_OUTPUT
-            echo "✅ Homebrew tap auto-updated"
+            echo "✅ Homebrew tap updated"
           fi
 
       - name: Create Release
@@ -140,25 +166,31 @@ jobs:
           body: |
             ## macOS Gateway Monitor v${{ steps.version.outputs.VERSION }}
             
+            ⚠️ **Note:** This app is not code-signed. On first launch:
+            1. Right-click the app → "Open"
+            2. Click "Open" in the security dialog
+            3. Or: System Settings → Privacy & Security → "Open Anyway"
+            
             ### Downloads
-            - **Apple Silicon (M1/M2/M3)**: macOS-Gateway-Monitor-${{ steps.version.outputs.VERSION }}-AppleSilicon.dmg
-            - **Intel**: macOS-Gateway-Monitor-${{ steps.version.outputs.VERSION }}-Intel.dmg (if available)
+            ${{ steps.rename.outputs.ARM_BUILT == 'true' && '- ✅ **Apple Silicon (M1/M2/M3)**: macOS-Gateway-Monitor-' || '- ❌ Apple Silicon: Not available' }}${{ steps.rename.outputs.ARM_BUILT == 'true' && steps.version.outputs.VERSION || '' }}${{ steps.rename.outputs.ARM_BUILT == 'true' && '-AppleSilicon.dmg' || '' }}
+            ${{ steps.rename.outputs.INTEL_BUILT == 'true' && '- ✅ **Intel**: macOS-Gateway-Monitor-' || '- ❌ Intel: Not available' }}${{ steps.rename.outputs.INTEL_BUILT == 'true' && steps.version.outputs.VERSION || '' }}${{ steps.rename.outputs.INTEL_BUILT == 'true' && '-Intel.dmg' || '' }}
             
             ### Installation
             
-            **Via Homebrew:**
+            **Via Homebrew (Recommended):**
             ```bash
             brew tap 13shivam/mgm
             brew install --cask mgm
             ```
             
-            **Manual:**
-            1. Download the appropriate DMG for your Mac
+            **Manual Installation:**
+            1. Download the DMG for your Mac architecture
             2. Open the DMG file
             3. Drag "macOS Gateway Monitor.app" to Applications
+            4. **Right-click** the app and select "Open" (first time only)
             
-            ### Homebrew Formula Status
-            ${{ steps.commit_formula.outputs.COMMITTED == 'true' && '✅ **Auto-updated** - Formula updated automatically with new checksums' || '⚠️ **Manual update needed** - Update `homebrew/mgm.rb` with checksums below:' }}
+            ### Homebrew Formula
+            ${{ steps.commit_formula.outputs.COMMITTED == 'true' && '✅ Auto-updated with new checksums' || '⚠️ Manual update needed' }}
             
             ### SHA256 Checksums
             ```
@@ -167,10 +199,12 @@ jobs:
             ```
             
             ---
-            See [README](https://github.com/13shivam/mgm#readme) for full documentation.
+            [Documentation](https://github.com/13shivam/mgm#readme) | [Report Issue](https://github.com/13shivam/mgm/issues)
           files: |
-            dist/macOS-Gateway-Monitor-*.dmg
+            dist/macOS-Gateway-Monitor-${{ steps.version.outputs.VERSION }}-AppleSilicon.dmg
+            dist/macOS-Gateway-Monitor-${{ steps.version.outputs.VERSION }}-Intel.dmg
           draft: false
           prerelease: false
+          fail_on_unmatched_files: false
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
