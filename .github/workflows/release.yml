@@ -57,60 +57,56 @@ jobs:
         id: version
         run: echo "VERSION=${GITHUB_REF#refs/tags/v}" >> $GITHUB_OUTPUT
 
-      - name: List and Rename DMG files
-        id: rename
+      - name: Prepare DMG files
+        id: prepare
         run: |
           cd dist
-          echo "📦 Files in dist:"
+          echo "📦 Original files:"
           ls -la
           
-          # Rename ARM64 if exists
+          # Just check what was built, don't rename yet
           if [ -f "macOS Gateway Monitor-${{ steps.version.outputs.VERSION }}-arm64.dmg" ]; then
-            mv "macOS Gateway Monitor-${{ steps.version.outputs.VERSION }}-arm64.dmg" "macOS-Gateway-Monitor-${{ steps.version.outputs.VERSION }}-AppleSilicon.dmg"
+            echo "ARM_FILE=macOS Gateway Monitor-${{ steps.version.outputs.VERSION }}-arm64.dmg" >> $GITHUB_OUTPUT
             echo "ARM_BUILT=true" >> $GITHUB_OUTPUT
-            echo "✅ Renamed ARM64 DMG"
+            echo "✅ ARM64 DMG found"
           else
             echo "ARM_BUILT=false" >> $GITHUB_OUTPUT
             echo "⚠️ ARM64 DMG not found"
           fi
           
-          # Rename Intel if exists
           if [ -f "macOS Gateway Monitor-${{ steps.version.outputs.VERSION }}-x64.dmg" ]; then
-            mv "macOS Gateway Monitor-${{ steps.version.outputs.VERSION }}-x64.dmg" "macOS-Gateway-Monitor-${{ steps.version.outputs.VERSION }}-Intel.dmg"
+            echo "INTEL_FILE=macOS Gateway Monitor-${{ steps.version.outputs.VERSION }}-x64.dmg" >> $GITHUB_OUTPUT
             echo "INTEL_BUILT=true" >> $GITHUB_OUTPUT
-            echo "✅ Renamed Intel DMG"
+            echo "✅ Intel DMG found"
           else
             echo "INTEL_BUILT=false" >> $GITHUB_OUTPUT
             echo "⚠️ Intel DMG not found"
           fi
-          
-          echo "📦 Renamed files:"
-          ls -la
 
       - name: Calculate SHA256 checksums
         id: checksums
         run: |
           cd dist
           
-          # Intel checksum
-          if [ "${{ steps.rename.outputs.INTEL_BUILT }}" == "true" ]; then
-            INTEL_SHA=$(shasum -a 256 "macOS-Gateway-Monitor-${{ steps.version.outputs.VERSION }}-Intel.dmg" | awk '{print $1}')
+          # Calculate from ORIGINAL files (before any renaming)
+          if [ "${{ steps.prepare.outputs.INTEL_BUILT }}" == "true" ]; then
+            INTEL_SHA=$(shasum -a 256 "${{ steps.prepare.outputs.INTEL_FILE }}" | awk '{print $1}')
             echo "INTEL_SHA=$INTEL_SHA" >> $GITHUB_OUTPUT
             echo "✅ Intel SHA256: $INTEL_SHA"
           else
             echo "INTEL_SHA=NOT_BUILT" >> $GITHUB_OUTPUT
-            echo "⚠️ Intel not built"
           fi
           
-          # ARM checksum
-          if [ "${{ steps.rename.outputs.ARM_BUILT }}" == "true" ]; then
-            ARM_SHA=$(shasum -a 256 "macOS-Gateway-Monitor-${{ steps.version.outputs.VERSION }}-AppleSilicon.dmg" | awk '{print $1}')
+          if [ "${{ steps.prepare.outputs.ARM_BUILT }}" == "true" ]; then
+            ARM_SHA=$(shasum -a 256 "${{ steps.prepare.outputs.ARM_FILE }}" | awk '{print $1}')
             echo "ARM_SHA=$ARM_SHA" >> $GITHUB_OUTPUT
             echo "✅ ARM SHA256: $ARM_SHA"
           else
             echo "ARM_SHA=NOT_BUILT" >> $GITHUB_OUTPUT
-            echo "⚠️ ARM not built"
           fi
+          
+          echo "📦 Final files to upload:"
+          ls -la
 
       - name: Update Homebrew Formula
         id: update_formula
@@ -126,10 +122,10 @@ jobs:
             
             if Hardware::CPU.intel?
               sha256 "${{ steps.checksums.outputs.INTEL_SHA }}"
-              url "https://github.com/13shivam/mgm/releases/download/v#{version}/macOS-Gateway-Monitor-#{version}-Intel.dmg"
+              url "https://github.com/13shivam/mgm/releases/download/v#{version}/macOS.Gateway.Monitor-#{version}-x64.dmg"
             else
               sha256 "${{ steps.checksums.outputs.ARM_SHA }}"
-              url "https://github.com/13shivam/mgm/releases/download/v#{version}/macOS-Gateway-Monitor-#{version}-AppleSilicon.dmg"
+              url "https://github.com/13shivam/mgm/releases/download/v#{version}/macOS.Gateway.Monitor-#{version}-arm64.dmg"
             end
             
             name "macOS Gateway Monitor"
@@ -226,8 +222,8 @@ jobs:
             ---
             [Documentation](https://github.com/13shivam/mgm#readme) | [Report Issue](https://github.com/13shivam/mgm/issues)
           files: |
-            dist/macOS-Gateway-Monitor-${{ steps.version.outputs.VERSION }}-AppleSilicon.dmg
-            dist/macOS-Gateway-Monitor-${{ steps.version.outputs.VERSION }}-Intel.dmg
+            dist/macOS Gateway Monitor-${{ steps.version.outputs.VERSION }}-arm64.dmg
+            dist/macOS Gateway Monitor-${{ steps.version.outputs.VERSION }}-x64.dmg
           draft: false
           prerelease: false
           fail_on_unmatched_files: false
