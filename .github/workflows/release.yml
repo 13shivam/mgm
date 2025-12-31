@@ -87,38 +87,50 @@ jobs:
       - name: Update Homebrew Formula
         id: update_formula
         run: |
-          # Update the formula with new version and checksums
-          sed -i '' "s/version \".*\"/version \"${{ steps.version.outputs.VERSION }}\"/" homebrew/mgm.rb
+          # Clone the tap repository
+          git clone https://github.com/13shivam/homebrew-mgm.git tap-repo
+          cd tap-repo
+          
+          # Create Casks directory if it doesn't exist
+          mkdir -p Casks
+          
+          # Copy and update the formula
+          cp ../homebrew/mgm.rb Casks/mgm.rb
+          
+          # Update version and checksums
+          sed -i '' "s/version \".*\"/version \"${{ steps.version.outputs.VERSION }}\"/" Casks/mgm.rb
           
           # Update Intel SHA256 if built
           if [ "${{ steps.checksums.outputs.INTEL_SHA }}" != "NOT_BUILT" ]; then
-            sed -i '' "s/sha256 \"INTEL_SHA256_PLACEHOLDER\"/sha256 \"${{ steps.checksums.outputs.INTEL_SHA }}\"/" homebrew/mgm.rb
-            sed -i '' "s/sha256 \"[a-f0-9]\{64\}\".*# Intel/sha256 \"${{ steps.checksums.outputs.INTEL_SHA }}\"  # Intel/" homebrew/mgm.rb
+            sed -i '' "/Hardware::CPU.intel?/,/url.*Intel/ s/sha256 \"[^\"]*\"/sha256 \"${{ steps.checksums.outputs.INTEL_SHA }}\"/" Casks/mgm.rb
           fi
           
           # Update ARM SHA256 if built
           if [ "${{ steps.checksums.outputs.ARM_SHA }}" != "NOT_BUILT" ]; then
-            sed -i '' "s/sha256 \"ARM_SHA256_PLACEHOLDER\"/sha256 \"${{ steps.checksums.outputs.ARM_SHA }}\"/" homebrew/mgm.rb
-            sed -i '' "s/sha256 \"[a-f0-9]\{64\}\".*# Apple Silicon/sha256 \"${{ steps.checksums.outputs.ARM_SHA }}\"  # Apple Silicon/" homebrew/mgm.rb
+            sed -i '' "/else/,/url.*AppleSilicon/ s/sha256 \"[^\"]*\"/sha256 \"${{ steps.checksums.outputs.ARM_SHA }}\"/" Casks/mgm.rb
           fi
           
           echo "Formula updated successfully"
+          cat Casks/mgm.rb
 
-      - name: Commit Homebrew Formula
+      - name: Commit and Push to Tap Repo
         id: commit_formula
         continue-on-error: true
+        env:
+          TAP_TOKEN: ${{ secrets.TAP_GITHUB_TOKEN }}
         run: |
+          cd tap-repo
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add homebrew/mgm.rb
+          git add Casks/mgm.rb
           if git diff --staged --quiet; then
             echo "No changes to commit"
             echo "COMMITTED=false" >> $GITHUB_OUTPUT
           else
-            git commit -m "chore: update Homebrew formula to v${{ steps.version.outputs.VERSION }}"
-            git push origin HEAD:main
+            git commit -m "chore: update mgm cask to v${{ steps.version.outputs.VERSION }}"
+            git push https://${TAP_TOKEN}@github.com/13shivam/homebrew-mgm.git main
             echo "COMMITTED=true" >> $GITHUB_OUTPUT
-            echo "✅ Homebrew formula auto-updated"
+            echo "✅ Homebrew tap auto-updated"
           fi
 
       - name: Create Release

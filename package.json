@@ -65,6 +65,8 @@
       ],
       "icon": "assets/icons/icon.icns"
     },
+    "win": false,
+    "linux": false,
     "dmg": {
       "icon": "assets/icons/icon.icns",
       "iconSize": 100,
