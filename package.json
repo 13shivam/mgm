@@ -41,7 +41,7 @@
     "lint": "eslint src/",
     "lint:fix": "eslint src/ --fix",
     "preinstall": "node scripts/check-admin.js",
-    "validate": "node -e \"require('./src/config/app-config.js'); console.log('✅ Configuration valid');\""
+    "validate": "node -e \"require('./src/config/app-config.js'); console.log('\u2705 Configuration valid');\""
   },
   "build": {
     "appId": "com.enterprise.macos-gateway-monitor",
@@ -60,7 +60,10 @@
       "target": [
         {
           "target": "dmg",
-          "arch": ["x64", "arm64"]
+          "arch": [
+            "x64",
+            "arm64"
+          ]
         }
       ],
       "icon": "assets/icons/icon.icns"
@@ -86,7 +89,8 @@
         "width": 540,
         "height": 380
       }
-    }
+    },
+    "afterSign": "scripts/sign.js"
   },
   "jest": {
     "testEnvironment": "node",

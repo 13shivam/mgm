@@ -45,37 +45,12 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Build DMG (Universal - Both Architectures)
+      - name: Build DMG with Ad-hoc Signing
         env:
           CSC_IDENTITY_AUTO_DISCOVERY: false
         run: |
           npm run build
-          echo "✅ Build completed"
-          ls -lh dist/
-
-      - name: Ad-hoc Sign Apps (Remove Quarantine)
-        run: |
-          # Mount DMGs and sign the apps
-          for dmg in dist/*.dmg; do
-            if [ -f "$dmg" ]; then
-              echo "Processing: $dmg"
-              hdiutil attach "$dmg" -nobrowse -quiet
-              
-              # Find mounted app
-              APP_PATH=$(find /Volumes -name "*.app" -maxdepth 2 2>/dev/null | grep "macOS Gateway Monitor" | head -1)
-              
-              if [ -n "$APP_PATH" ]; then
-                echo "Signing: $APP_PATH"
-                codesign --force --deep --sign - "$APP_PATH"
-                
-                # Detach and recreate DMG
-                VOLUME=$(dirname "$APP_PATH")
-                hdiutil detach "$VOLUME" -quiet
-              fi
-            fi
-          done
-          
-          echo "✅ Apps signed"
+          echo "✅ Build completed (apps signed via afterSign hook)"
           ls -lh dist/
 
       - name: Get version from tag
