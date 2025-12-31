@@ -65,15 +65,18 @@ Download pre-built installers from [Releases](https://github.com/13shivam/mgm/re
 
 ## Screenshots
 
-### App in Action
-![Demo](assets/demo.gif)
-
-
-### Main Dashboard
-![Main Dashboard](assets/screenshot-dashboard.png)
+### Process Dashboard
+![Process Dashboard](assets/process_stats.png)
 
 ### Network Monitoring
-![Network Monitoring](assets/screenshot-network.png)
+![Network Monitoring](assets/network_stats.png)
+
+### Security Stats
+![Security Stats](assets/security_stats.png)
+
+### App in Action
+![Demo](assets/meta_stats.png)
+
 
 ## ✨ Latest Updates
 
