@@ -32,7 +32,7 @@
   "scripts": {
     "start": "electron .",
     "dev": "NODE_ENV=development electron . --dev",
-    "build": "electron-builder",
+    "build": "electron-builder --publish never",
     "test": "NODE_ENV=test jest",
     "test:unit": "NODE_ENV=test jest src/tests/unit",
     "test:integration": "NODE_ENV=test jest src/tests/integration",
