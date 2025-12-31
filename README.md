@@ -65,9 +65,6 @@ Download pre-built installers from [Releases](https://github.com/13shivam/mgm/re
 
 ## Screenshots
 
-### App in Action
-![Demo](assets/meta_stats.png)
-
 ### Process Dashboard
 ![Process Dashboard](assets/process_stats.png)
 
@@ -76,6 +73,9 @@ Download pre-built installers from [Releases](https://github.com/13shivam/mgm/re
 
 ### Security Stats
 ![Security Stats](assets/security_stats.png)
+
+### App in Action
+![Demo](assets/meta_stats.png)
 
 
 ## ✨ Latest Updates
