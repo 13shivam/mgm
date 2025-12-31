@@ -11,6 +11,17 @@
 
 A developer-friendly macOS monitoring tool for deep system analysis and network visibility. Designed for developers, security professionals, and anyone interested in understanding egress/ingress traffic patterns, process-level network activity, and OS-layer diagnostics. Built with Electron for native performance and modern UI.
 
+> **⚠️ Important Note for macOS Users**  
+> Since this app is not signed with an Apple Developer license, macOS may identify it as from an "unidentified developer" or show a "damaged" error. After installing via Homebrew:
+> ```bash
+> brew tap 13shivam/mgm
+> brew install --cask mgm
+> 
+> # Run this before opening the app
+> sudo xattr -cr "/Applications/macOS Gateway Monitor.app"
+> ```
+> This removes the quarantine attribute and allows the app to run normally.
+
 **Key Capabilities:**
 - 🔍 **Process-Level Network Tracking**: See which applications are making network connections and consuming bandwidth
 - 🌐 **Egress/Ingress Analysis**: Monitor all TCP, UDP, and Unix socket connections with real-time state tracking
