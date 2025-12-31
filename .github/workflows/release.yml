@@ -53,6 +53,31 @@ jobs:
           echo "✅ Build completed"
           ls -lh dist/
 
+      - name: Ad-hoc Sign Apps (Remove Quarantine)
+        run: |
+          # Mount DMGs and sign the apps
+          for dmg in dist/*.dmg; do
+            if [ -f "$dmg" ]; then
+              echo "Processing: $dmg"
+              hdiutil attach "$dmg" -nobrowse -quiet
+              
+              # Find mounted app
+              APP_PATH=$(find /Volumes -name "*.app" -maxdepth 2 2>/dev/null | grep "macOS Gateway Monitor" | head -1)
+              
+              if [ -n "$APP_PATH" ]; then
+                echo "Signing: $APP_PATH"
+                codesign --force --deep --sign - "$APP_PATH"
+                
+                # Detach and recreate DMG
+                VOLUME=$(dirname "$APP_PATH")
+                hdiutil detach "$VOLUME" -quiet
+              fi
+            fi
+          done
+          
+          echo "✅ Apps signed"
+          ls -lh dist/
+
       - name: Get version from tag
         id: version
         run: echo "VERSION=${GITHUB_REF#refs/tags/v}" >> $GITHUB_OUTPUT
@@ -141,16 +166,13 @@ jobs:
             ]
             
             caveats <<~EOS
-              ⚠️  This app is not code-signed. On first launch:
-              1. Right-click the app in Applications
-              2. Select "Open" from the menu
-              3. Click "Open" in the security dialog
+              ⚠️  If you see "damaged" error, run:
+                sudo xattr -cr "/Applications/macOS Gateway Monitor.app"
               
-              Or: System Settings → Privacy & Security → Click "Open Anyway"
+              Then open the app normally.
               
-              macOS Gateway Monitor requires admin privileges for full functionality.
-              Run the setup script for passwordless sudo:
-                cd /Applications/macOS\ Gateway\ Monitor.app/Contents/Resources/app
+              For admin privileges (full functionality):
+                cd "/Applications/macOS Gateway Monitor.app/Contents/Resources/app"
                 ./setup-admin.sh
             EOS
           end
