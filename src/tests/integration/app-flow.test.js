@@ -122,7 +122,7 @@ describe('App Integration Tests', () => {
 
             await app.tabManager.showTab('routing');
 
-            expect(mockIpcRenderer.invoke).toHaveBeenCalledWith('get-netstat');
+            expect(mockIpcRenderer.invoke).toHaveBeenCalledWith('get-routing');
         });
     });
 
