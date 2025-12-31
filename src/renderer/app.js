@@ -914,18 +914,6 @@ class App {
         }
     }
 
-    updateScanInterval() {
-        const input = document.getElementById('scan-interval');
-        if (input) {
-            const newInterval = parseInt(input.value);
-            if (this.securityService.setScanInterval(newInterval)) {
-                console.log(`Scan interval updated to ${newInterval} seconds`);
-            } else {
-                alert('Invalid interval. Must be between 10 and 600 seconds.');
-            }
-        }
-    }
-
     toggleRoutingView() {
         const friendly = document.getElementById('routing-friendly');
         const raw = document.getElementById('routing-list');
