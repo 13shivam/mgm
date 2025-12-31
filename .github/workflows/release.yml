@@ -120,45 +120,45 @@ jobs:
           mkdir -p Casks
           
           # Create formula from scratch
-          cat > Casks/mgm.rb << 'FORMULA_EOF'
-cask "mgm" do
-  version "${{ steps.version.outputs.VERSION }}"
-  
-  if Hardware::CPU.intel?
-    sha256 "${{ steps.checksums.outputs.INTEL_SHA }}"
-    url "https://github.com/13shivam/mgm/releases/download/v#{version}/macOS-Gateway-Monitor-#{version}-Intel.dmg"
-  else
-    sha256 "${{ steps.checksums.outputs.ARM_SHA }}"
-    url "https://github.com/13shivam/mgm/releases/download/v#{version}/macOS-Gateway-Monitor-#{version}-AppleSilicon.dmg"
-  end
-  
-  name "macOS Gateway Monitor"
-  desc "macOS security and network monitoring tool with real-time process analysis"
-  homepage "https://github.com/13shivam/mgm"
-  
-  app "macOS Gateway Monitor.app"
-  
-  zap trash: [
-    "~/Library/Application Support/macOS Gateway Monitor",
-    "~/Library/Preferences/com.enterprise.macos-gateway-monitor.plist",
-    "~/Library/Caches/com.enterprise.macos-gateway-monitor",
-  ]
-  
-  caveats <<~EOS
-    ⚠️  This app is not code-signed. On first launch:
-    1. Right-click the app in Applications
-    2. Select "Open" from the menu
-    3. Click "Open" in the security dialog
-    
-    Or: System Settings → Privacy & Security → Click "Open Anyway"
-    
-    macOS Gateway Monitor requires admin privileges for full functionality.
-    Run the setup script for passwordless sudo:
-      cd /Applications/macOS\ Gateway\ Monitor.app/Contents/Resources/app
-      ./setup-admin.sh
-  EOS
-end
-FORMULA_EOF
+          cat > Casks/mgm.rb << EOF
+          cask "mgm" do
+            version "${{ steps.version.outputs.VERSION }}"
+            
+            if Hardware::CPU.intel?
+              sha256 "${{ steps.checksums.outputs.INTEL_SHA }}"
+              url "https://github.com/13shivam/mgm/releases/download/v#{version}/macOS-Gateway-Monitor-#{version}-Intel.dmg"
+            else
+              sha256 "${{ steps.checksums.outputs.ARM_SHA }}"
+              url "https://github.com/13shivam/mgm/releases/download/v#{version}/macOS-Gateway-Monitor-#{version}-AppleSilicon.dmg"
+            end
+            
+            name "macOS Gateway Monitor"
+            desc "macOS security and network monitoring tool with real-time process analysis"
+            homepage "https://github.com/13shivam/mgm"
+            
+            app "macOS Gateway Monitor.app"
+            
+            zap trash: [
+              "~/Library/Application Support/macOS Gateway Monitor",
+              "~/Library/Preferences/com.enterprise.macos-gateway-monitor.plist",
+              "~/Library/Caches/com.enterprise.macos-gateway-monitor",
+            ]
+            
+            caveats <<~EOS
+              ⚠️  This app is not code-signed. On first launch:
+              1. Right-click the app in Applications
+              2. Select "Open" from the menu
+              3. Click "Open" in the security dialog
+              
+              Or: System Settings → Privacy & Security → Click "Open Anyway"
+              
+              macOS Gateway Monitor requires admin privileges for full functionality.
+              Run the setup script for passwordless sudo:
+                cd /Applications/macOS\ Gateway\ Monitor.app/Contents/Resources/app
+                ./setup-admin.sh
+            EOS
+          end
+          EOF
           
           echo "📄 Generated formula:"
           cat Casks/mgm.rb
