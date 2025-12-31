@@ -1,0 +1,115 @@
+{
+  "name": "macos-gateway-monitor",
+  "version": "0.0.1",
+  "description": "macOS security and network monitoring tool with real-time process analysis, network bandwidth tracking, and comprehensive security scanning",
+  "main": "src/main.js",
+  "author": {
+    "name": "Shivam Rai",
+    "email": "one3shivam@yahoo.com",
+    "url": "https://github.com/13shivam"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/13shivam/ttas.git"
+  },
+  "bugs": {
+    "url": "https://github.com/13shivam/ttas/issues"
+  },
+  "homepage": "https://github.com/13shivam/ttas#readme",
+  "license": "MIT",
+  "keywords": [
+    "macos",
+    "security",
+    "network-monitor",
+    "process-monitor",
+    "system-monitor",
+    "electron",
+    "gateway",
+    "firewall",
+    "network-analysis",
+    "security-scanner"
+  ],
+  "scripts": {
+    "start": "electron .",
+    "dev": "NODE_ENV=development electron . --dev",
+    "build": "electron-builder",
+    "test": "NODE_ENV=test jest",
+    "test:unit": "NODE_ENV=test jest src/tests/unit",
+    "test:integration": "NODE_ENV=test jest src/tests/integration",
+    "test:watch": "NODE_ENV=test jest --watch",
+    "test:coverage": "NODE_ENV=test jest --coverage",
+    "lint": "eslint src/",
+    "lint:fix": "eslint src/ --fix",
+    "preinstall": "node scripts/check-admin.js",
+    "validate": "node -e \"require('./src/config/app-config.js'); console.log('✅ Configuration valid');\""
+  },
+  "build": {
+    "appId": "com.enterprise.macos-gateway-monitor",
+    "productName": "macOS Gateway Monitor",
+    "directories": {
+      "output": "dist"
+    },
+    "files": [
+      "src/**/*",
+      "assets/**/*",
+      "node_modules/**/*",
+      "package.json"
+    ],
+    "mac": {
+      "category": "public.app-category.developer-tools",
+      "target": [
+        {
+          "target": "dmg",
+          "arch": ["x64", "arm64"]
+        }
+      ],
+      "icon": "assets/icons/icon.icns"
+    },
+    "dmg": {
+      "icon": "assets/icons/icon.icns",
+      "iconSize": 100,
+      "contents": [
+        {
+          "x": 130,
+          "y": 220
+        },
+        {
+          "x": 410,
+          "y": 220,
+          "type": "link",
+          "path": "/Applications"
+        }
+      ],
+      "window": {
+        "width": 540,
+        "height": 380
+      }
+    }
+  },
+  "jest": {
+    "testEnvironment": "node",
+    "testMatch": [
+      "**/tests/**/*.test.js"
+    ],
+    "collectCoverageFrom": [
+      "src/renderer/**/*.js",
+      "!src/renderer/app.js",
+      "!src/renderer/renderer.js",
+      "!src/tests/**"
+    ],
+    "coverageThreshold": {
+      "global": {
+        "branches": 40,
+        "functions": 50,
+        "lines": 50,
+        "statements": 50
+      }
+    }
+  },
+  "devDependencies": {
+    "electron": "^38.2.1",
+    "electron-builder": "^24.0.0",
+    "eslint": "^8.0.0",
+    "jest": "^29.0.0"
+  }
+}

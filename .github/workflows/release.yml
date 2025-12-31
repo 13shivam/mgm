@@ -1,0 +1,164 @@
+name: Build and Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  test:
+    runs-on: macos-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run tests
+        run: npm test
+
+      - name: Run linter
+        run: npm run lint
+
+  build-and-release:
+    needs: test
+    runs-on: macos-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build DMG
+        run: npm run build
+
+      - name: Get version from tag
+        id: version
+        run: echo "VERSION=${GITHUB_REF#refs/tags/v}" >> $GITHUB_OUTPUT
+
+      - name: Rename DMG files
+        run: |
+          cd dist
+          if [ -f "macOS Gateway Monitor-${{ steps.version.outputs.VERSION }}-arm64.dmg" ]; then
+            mv "macOS Gateway Monitor-${{ steps.version.outputs.VERSION }}-arm64.dmg" "macOS-Gateway-Monitor-${{ steps.version.outputs.VERSION }}-AppleSilicon.dmg"
+          fi
+          if [ -f "macOS Gateway Monitor-${{ steps.version.outputs.VERSION }}-x64.dmg" ]; then
+            mv "macOS Gateway Monitor-${{ steps.version.outputs.VERSION }}-x64.dmg" "macOS-Gateway-Monitor-${{ steps.version.outputs.VERSION }}-Intel.dmg"
+          fi
+          ls -la
+
+      - name: Calculate SHA256 checksums
+        id: checksums
+        run: |
+          cd dist
+          if [ -f "macOS-Gateway-Monitor-${{ steps.version.outputs.VERSION }}-Intel.dmg" ]; then
+            INTEL_SHA=$(shasum -a 256 "macOS-Gateway-Monitor-${{ steps.version.outputs.VERSION }}-Intel.dmg" | awk '{print $1}')
+            echo "INTEL_SHA=$INTEL_SHA" >> $GITHUB_OUTPUT
+            echo "Intel SHA256: $INTEL_SHA"
+          else
+            echo "INTEL_SHA=NOT_BUILT" >> $GITHUB_OUTPUT
+          fi
+          if [ -f "macOS-Gateway-Monitor-${{ steps.version.outputs.VERSION }}-AppleSilicon.dmg" ]; then
+            ARM_SHA=$(shasum -a 256 "macOS-Gateway-Monitor-${{ steps.version.outputs.VERSION }}-AppleSilicon.dmg" | awk '{print $1}')
+            echo "ARM_SHA=$ARM_SHA" >> $GITHUB_OUTPUT
+            echo "Apple Silicon SHA256: $ARM_SHA"
+          else
+            echo "ARM_SHA=NOT_BUILT" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Update Homebrew Formula
+        id: update_formula
+        run: |
+          # Update the formula with new version and checksums
+          sed -i '' "s/version \".*\"/version \"${{ steps.version.outputs.VERSION }}\"/" homebrew/mgm.rb
+          
+          # Update Intel SHA256 if built
+          if [ "${{ steps.checksums.outputs.INTEL_SHA }}" != "NOT_BUILT" ]; then
+            sed -i '' "s/sha256 \"INTEL_SHA256_PLACEHOLDER\"/sha256 \"${{ steps.checksums.outputs.INTEL_SHA }}\"/" homebrew/mgm.rb
+            sed -i '' "s/sha256 \"[a-f0-9]\{64\}\".*# Intel/sha256 \"${{ steps.checksums.outputs.INTEL_SHA }}\"  # Intel/" homebrew/mgm.rb
+          fi
+          
+          # Update ARM SHA256 if built
+          if [ "${{ steps.checksums.outputs.ARM_SHA }}" != "NOT_BUILT" ]; then
+            sed -i '' "s/sha256 \"ARM_SHA256_PLACEHOLDER\"/sha256 \"${{ steps.checksums.outputs.ARM_SHA }}\"/" homebrew/mgm.rb
+            sed -i '' "s/sha256 \"[a-f0-9]\{64\}\".*# Apple Silicon/sha256 \"${{ steps.checksums.outputs.ARM_SHA }}\"  # Apple Silicon/" homebrew/mgm.rb
+          fi
+          
+          echo "Formula updated successfully"
+
+      - name: Commit Homebrew Formula
+        id: commit_formula
+        continue-on-error: true
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add homebrew/mgm.rb
+          if git diff --staged --quiet; then
+            echo "No changes to commit"
+            echo "COMMITTED=false" >> $GITHUB_OUTPUT
+          else
+            git commit -m "chore: update Homebrew formula to v${{ steps.version.outputs.VERSION }}"
+            git push origin HEAD:main
+            echo "COMMITTED=true" >> $GITHUB_OUTPUT
+            echo "✅ Homebrew formula auto-updated"
+          fi
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v1
+        with:
+          name: macOS Gateway Monitor v${{ steps.version.outputs.VERSION }}
+          body: |
+            ## macOS Gateway Monitor v${{ steps.version.outputs.VERSION }}
+            
+            ### Downloads
+            - **Apple Silicon (M1/M2/M3)**: macOS-Gateway-Monitor-${{ steps.version.outputs.VERSION }}-AppleSilicon.dmg
+            - **Intel**: macOS-Gateway-Monitor-${{ steps.version.outputs.VERSION }}-Intel.dmg (if available)
+            
+            ### Installation
+            
+            **Via Homebrew:**
+            ```bash
+            brew tap 13shivam/mgm
+            brew install --cask mgm
+            ```
+            
+            **Manual:**
+            1. Download the appropriate DMG for your Mac
+            2. Open the DMG file
+            3. Drag "macOS Gateway Monitor.app" to Applications
+            
+            ### Homebrew Formula Status
+            ${{ steps.commit_formula.outputs.COMMITTED == 'true' && '✅ **Auto-updated** - Formula updated automatically with new checksums' || '⚠️ **Manual update needed** - Update `homebrew/mgm.rb` with checksums below:' }}
+            
+            ### SHA256 Checksums
+            ```
+            Apple Silicon: ${{ steps.checksums.outputs.ARM_SHA }}
+            Intel: ${{ steps.checksums.outputs.INTEL_SHA }}
+            ```
+            
+            ---
+            See [README](https://github.com/13shivam/mgm#readme) for full documentation.
+          files: |
+            dist/macOS-Gateway-Monitor-*.dmg
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

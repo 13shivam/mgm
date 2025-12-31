@@ -1,0 +1,26 @@
+# Ignore build artifacts
+dist/
+*.dmg
+
+# Ignore node modules
+node_modules/
+
+# Ignore test coverage
+coverage/
+
+# Ignore IDE files
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Ignore macOS files
+.DS_Store
+
+# Ignore logs
+*.log
+npm-debug.log*
+
+# Ignore temporary files
+*.tmp
+.cache/
